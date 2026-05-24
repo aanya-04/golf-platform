@@ -1,15 +1,326 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
-// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
-
 generator client {
   provider = "prisma-client-js"
 }
 
 datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
-   directUrl = env("DIRECT_URL")
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+enum UserRole {
+  subscriber
+  admin
+}
+
+enum SubscriptionPlan {
+  monthly
+  yearly
+}
+
+enum SubscriptionStatus {
+  active
+  inactive
+  cancelled
+  past_due
+  trialing
+}
+
+enum DrawMode {
+  random
+  algorithmic
+}
+
+enum DrawStatus {
+  pending
+  simulated
+  completed
+  published
+}
+
+enum PayoutStatus {
+  pending
+  verified
+  paid
+  rejected
+}
+
+enum ProofReviewStatus {
+  pending
+  approved
+  rejected
+}
+
+enum NotificationType {
+  draw_result
+  winner_alert
+  subscription_update
+  payout_update
+}
+
+model User {
+  id                   String    @id @default(uuid())
+  supabaseId           String    @unique @map("supabase_id")
+  email                String    @unique
+  fullName             String    @map("full_name")
+  avatarUrl            String?   @map("avatar_url")
+  role                 UserRole  @default(subscriber)
+  charityPercentage    Int       @default(10) @map("charity_percentage")
+  selectedCharityId    String?   @map("selected_charity_id")
+  isActive             Boolean   @default(true) @map("is_active")
+  createdAt            DateTime  @default(now()) @map("created_at")
+  updatedAt            DateTime  @updatedAt @map("updated_at")
+
+  selectedCharity      Charity?              @relation("UserSelectedCharity", fields: [selectedCharityId], references: [id])
+  subscription         Subscription?
+  golfScores           GolfScore[]
+  drawEntries          DrawEntry[]
+  winners              Winner[]
+  charityContributions CharityContribution[]
+  notifications        Notification[]
+  auditLogs            AdminAuditLog[]       @relation("AuditLogTarget")
+
+  @@index([supabaseId])
+  @@index([email])
+  @@index([role])
+  @@map("users")
+}
+
+model Subscription {
+  id                   String             @id @default(uuid())
+  userId               String             @unique @map("user_id")
+  stripeCustomerId     String             @unique @map("stripe_customer_id")
+  stripeSubscriptionId String?            @unique @map("stripe_subscription_id")
+  stripePriceId        String?            @map("stripe_price_id")
+  plan                 SubscriptionPlan   @default(monthly)
+  status               SubscriptionStatus @default(inactive)
+  currentPeriodStart   DateTime?          @map("current_period_start")
+  currentPeriodEnd     DateTime?          @map("current_period_end")
+  cancelAtPeriodEnd    Boolean            @default(false) @map("cancel_at_period_end")
+  cancelledAt          DateTime?          @map("cancelled_at")
+  trialEnd             DateTime?          @map("trial_end")
+  createdAt            DateTime           @default(now()) @map("created_at")
+  updatedAt            DateTime           @updatedAt @map("updated_at")
+
+  user                 User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([stripeCustomerId])
+  @@index([status])
+  @@map("subscriptions")
+}
+
+model GolfScore {
+  id          String   @id @default(uuid())
+  userId      String   @map("user_id")
+  score       Int
+  scoreDate   DateTime @map("score_date") @db.Date
+  entryOrder  Int      @map("entry_order")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, scoreDate])
+  @@index([userId, entryOrder])
+  @@index([userId, scoreDate])
+  @@map("golf_scores")
+}
+
+model Charity {
+  id            String    @id @default(uuid())
+  name          String
+  slug          String    @unique
+  description   String    @db.Text
+  logoUrl       String?   @map("logo_url")
+  websiteUrl    String?   @map("website_url")
+  isFeatured    Boolean   @default(false) @map("is_featured")
+  isActive      Boolean   @default(true) @map("is_active")
+  createdAt     DateTime  @default(now()) @map("created_at")
+  updatedAt     DateTime  @updatedAt @map("updated_at")
+
+  usersSelected        User[]                @relation("UserSelectedCharity")
+  contributions        CharityContribution[]
+  events               CharityEvent[]
+
+  @@index([slug])
+  @@index([isFeatured, isActive])
+  @@map("charities")
+}
+
+model CharityEvent {
+  id          String   @id @default(uuid())
+  charityId   String   @map("charity_id")
+  title       String
+  description String?  @db.Text
+  eventDate   DateTime @map("event_date")
+  location    String?
+  imageUrl    String?  @map("image_url")
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  charity     Charity  @relation(fields: [charityId], references: [id], onDelete: Cascade)
+
+  @@index([charityId, eventDate])
+  @@map("charity_events")
+}
+
+model CharityContribution {
+  id            String   @id @default(uuid())
+  userId        String   @map("user_id")
+  charityId     String   @map("charity_id")
+  percentage    Int
+  amountPence   Int      @map("amount_pence")
+  billingPeriod String   @map("billing_period")
+  createdAt     DateTime @default(now()) @map("created_at")
+
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  charity       Charity  @relation(fields: [charityId], references: [id])
+
+  @@index([userId])
+  @@index([charityId])
+  @@index([billingPeriod])
+  @@map("charity_contributions")
+}
+
+model Draw {
+  id               String     @id @default(uuid())
+  monthKey         String     @unique @map("month_key")
+  status           DrawStatus @default(pending)
+  drawMode         DrawMode   @default(random) @map("draw_mode")
+  jackpotCarryover Int        @default(0) @map("jackpot_carryover")
+  drawnAt          DateTime?  @map("drawn_at")
+  publishedAt      DateTime?  @map("published_at")
+  createdAt        DateTime   @default(now()) @map("created_at")
+  updatedAt        DateTime   @updatedAt @map("updated_at")
+
+  prizePool        PrizePool?
+  drawResult       DrawResult?
+  drawEntries      DrawEntry[]
+  winners          Winner[]
+
+  @@index([status])
+  @@index([monthKey])
+  @@map("draws")
+}
+
+model DrawResult {
+  id           String   @id @default(uuid())
+  drawId       String   @unique @map("draw_id")
+  number1      Int      @map("number_1")
+  number2      Int      @map("number_2")
+  number3      Int      @map("number_3")
+  number4      Int      @map("number_4")
+  number5      Int      @map("number_5")
+  isSimulation Boolean  @default(false) @map("is_simulation")
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  draw         Draw     @relation(fields: [drawId], references: [id], onDelete: Cascade)
+
+  @@map("draw_results")
+}
+
+model PrizePool {
+  id                String   @id @default(uuid())
+  drawId            String   @unique @map("draw_id")
+  totalPence        Int      @map("total_pence")
+  tier5Pence        Int      @map("tier_5_pence")
+  tier4Pence        Int      @map("tier_4_pence")
+  tier3Pence        Int      @map("tier_3_pence")
+  jackpotCarryover  Int      @default(0) @map("jackpot_carryover")
+  activeSubscribers Int      @map("active_subscribers")
+  calculatedAt      DateTime @default(now()) @map("calculated_at")
+
+  draw              Draw     @relation(fields: [drawId], references: [id], onDelete: Cascade)
+
+  @@map("prize_pools")
+}
+
+model DrawEntry {
+  id         String   @id @default(uuid())
+  userId     String   @map("user_id")
+  drawId     String   @map("draw_id")
+  score1     Int      @map("score_1")
+  score2     Int      @map("score_2")
+  score3     Int      @map("score_3")
+  score4     Int      @map("score_4")
+  score5     Int      @map("score_5")
+  matchCount Int      @default(0) @map("match_count")
+  enteredAt  DateTime @default(now()) @map("entered_at")
+
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  draw       Draw     @relation(fields: [drawId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, drawId])
+  @@index([drawId, matchCount])
+  @@map("draw_entries")
+}
+
+model Winner {
+  id               String       @id @default(uuid())
+  userId           String       @map("user_id")
+  drawId           String       @map("draw_id")
+  matchTier        Int          @map("match_tier")
+  prizeAmountPence Int          @map("prize_amount_pence")
+  payoutStatus     PayoutStatus @default(pending) @map("payout_status")
+  verifiedAt       DateTime?    @map("verified_at")
+  paidAt           DateTime?    @map("paid_at")
+  createdAt        DateTime     @default(now()) @map("created_at")
+  updatedAt        DateTime     @updatedAt @map("updated_at")
+
+  user             User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  draw             Draw         @relation(fields: [drawId], references: [id], onDelete: Cascade)
+  proofs           WinnerProof[]
+
+  @@unique([userId, drawId])
+  @@index([payoutStatus])
+  @@index([drawId])
+  @@map("winners")
+}
+
+model WinnerProof {
+  id           String            @id @default(uuid())
+  winnerId     String            @map("winner_id")
+  proofUrl     String            @map("proof_url")
+  reviewStatus ProofReviewStatus @default(pending) @map("review_status")
+  adminNote    String?           @map("admin_note") @db.Text
+  submittedAt  DateTime          @default(now()) @map("submitted_at")
+  reviewedAt   DateTime?         @map("reviewed_at")
+
+  winner       Winner            @relation(fields: [winnerId], references: [id], onDelete: Cascade)
+
+  @@index([winnerId])
+  @@index([reviewStatus])
+  @@map("winner_proofs")
+}
+
+model Notification {
+  id        String           @id @default(uuid())
+  userId    String           @map("user_id")
+  type      NotificationType
+  title     String
+  body      String           @db.Text
+  isRead    Boolean          @default(false) @map("is_read")
+  metadata  Json?
+  createdAt DateTime         @default(now()) @map("created_at")
+
+  user      User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, isRead])
+  @@index([createdAt])
+  @@map("notifications")
+}
+
+model AdminAuditLog {
+  id        String   @id @default(uuid())
+  adminId   String   @map("admin_id")
+  targetId  String?  @map("target_id")
+  action    String
+  metadata  Json?
+  createdAt DateTime @default(now()) @map("created_at")
+
+  admin     User     @relation("AuditLogTarget", fields: [adminId], references: [id])
+
+  @@index([adminId])
+  @@index([action])
+  @@index([createdAt])
+  @@map("admin_audit_logs")
 }
