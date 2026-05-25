@@ -1,10 +1,13 @@
 import { getAuthenticatedUser } from "@/services/auth.service";
-import { createCheckoutSession } from "@/services/subscription.service";
+import { verifyAndActivate } from "@/services/subscription.service";
 import { handleApiError } from "@/lib/utils/errors";
 import { z } from "zod";
 
 const schema = z.object({
   plan: z.enum(["monthly", "yearly"]),
+  razorpayOrderId: z.string(),
+  razorpayPaymentId: z.string(),
+  razorpaySignature: z.string(),
 });
 
 export async function POST(request: Request) {
@@ -14,20 +17,21 @@ export async function POST(request: Request) {
     const parsed = schema.safeParse(body);
 
     if (!parsed.success) {
-      return Response.json({ error: "Invalid plan", code: "VALIDATION_ERROR" }, { status: 422 });
+      return Response.json(
+        { error: "Invalid input", code: "VALIDATION_ERROR" },
+        { status: 422 }
+      );
     }
 
-    const appUrl = process.env.NEXT_PUBLIC_APP_URL!;
-    const url = await createCheckoutSession(
+    const subscription = await verifyAndActivate(
       user.id,
-      user.email,
-      user.fullName,
       parsed.data.plan,
-      `${appUrl}/dashboard?subscribed=true`,
-      `${appUrl}/subscription`
+      parsed.data.razorpayOrderId,
+      parsed.data.razorpayPaymentId,
+      parsed.data.razorpaySignature
     );
 
-    return Response.json({ data: { url }, error: null });
+    return Response.json({ data: subscription, error: null });
   } catch (error) {
     return handleApiError(error);
   }
