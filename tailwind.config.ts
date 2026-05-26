@@ -1,185 +1,103 @@
-// import type { Config } from "tailwindcss";
-
-// const config: Config = {
-//   darkMode: "class",
-//   content: [
-//     "./src/pages/**/*.{js,ts,jsx,tsx,mdx}",
-//     "./src/components/**/*.{js,ts,jsx,tsx,mdx}",
-//     "./src/app/**/*.{js,ts,jsx,tsx,mdx}",
-//     "./src/lib/**/*.{js,ts,jsx,tsx,mdx}",
-//   ],
-//   theme: {
-//     extend: {
-//       colors: {
-//         border: "hsl(var(--border))",
-//         input: "hsl(var(--input))",
-//         ring: "hsl(var(--ring))",
-//         background: "hsl(var(--background))",
-//         foreground: "hsl(var(--foreground))",
-//         primary: {
-//           DEFAULT: "hsl(var(--primary))",
-//           foreground: "hsl(var(--primary-foreground))",
-//         },
-//         secondary: {
-//           DEFAULT: "hsl(var(--secondary))",
-//           foreground: "hsl(var(--secondary-foreground))",
-//         },
-//         destructive: {
-//           DEFAULT: "hsl(var(--destructive))",
-//           foreground: "hsl(var(--destructive-foreground))",
-//         },
-//         muted: {
-//           DEFAULT: "hsl(var(--muted))",
-//           foreground: "hsl(var(--muted-foreground))",
-//         },
-//         accent: {
-//           DEFAULT: "hsl(var(--accent))",
-//           foreground: "hsl(var(--accent-foreground))",
-//         },
-//         popover: {
-//           DEFAULT: "hsl(var(--popover))",
-//           foreground: "hsl(var(--popover-foreground))",
-//         },
-//         card: {
-//           DEFAULT: "hsl(var(--card))",
-//           foreground: "hsl(var(--card-foreground))",
-//         },
-//         brand: {
-//           50:  "#f0fdf4",
-//           100: "#dcfce7",
-//           200: "#bbf7d0",
-//           300: "#86efac",
-//           400: "#4ade80",
-//           500: "#22c55e",
-//           600: "#16a34a",
-//           700: "#15803d",
-//           800: "#166534",
-//           900: "#14532d",
-//           950: "#052e16",
-//         },
-//         charity: {
-//           DEFAULT: "#8b5cf6",
-//           light: "#ede9fe",
-//         },
-//       },
-//       borderRadius: {
-//         lg: "var(--radius)",
-//         md: "calc(var(--radius) - 2px)",
-//         sm: "calc(var(--radius) - 4px)",
-//       },
-//       fontFamily: {
-//         sans: ["var(--font-geist-sans)", "system-ui", "sans-serif"],
-//         mono: ["var(--font-geist-mono)", "monospace"],
-//       },
-//       keyframes: {
-//         "accordion-down": {
-//           from: { height: "0" },
-//           to: { height: "var(--radix-accordion-content-height)" },
-//         },
-//         "accordion-up": {
-//           from: { height: "var(--radix-accordion-content-height)" },
-//           to: { height: "0" },
-//         },
-//         "fade-in": {
-//           from: { opacity: "0", transform: "translateY(8px)" },
-//           to: { opacity: "1", transform: "translateY(0)" },
-//         },
-//         "slide-in-right": {
-//           from: { transform: "translateX(100%)" },
-//           to: { transform: "translateX(0)" },
-//         },
-//         shimmer: {
-//           from: { backgroundPosition: "200% 0" },
-//           to: { backgroundPosition: "-200% 0" },
-//         },
-//       },
-//       animation: {
-//         "accordion-down": "accordion-down 0.2s ease-out",
-//         "accordion-up": "accordion-up 0.2s ease-out",
-//         "fade-in": "fade-in 0.3s ease-out",
-//         "slide-in-right": "slide-in-right 0.3s ease-out",
-//         shimmer: "shimmer 2s infinite linear",
-//       },
-//     },
-//   },
-//   plugins: [require("tailwindcss-animate")],
-// };
-
-// export default config;
-
-
-
-// import type { Config } from "tailwindcss";
-
-// const config: Config = {
-//   darkMode: "class",
-//   content: [
-//     "./app/**/*.{ts,tsx}",
-//     "./components/**/*.{ts,tsx}",
-//     "./pages/**/*.{ts,tsx}",
-//     "./src/**/*.{ts,tsx}",
-//   ],
-//   theme: {
-//     extend: {
-//       colors: {
-//         border: "hsl(var(--border))",
-//         input: "hsl(var(--input))",
-//         ring: "hsl(var(--ring))",
-//         background: "hsl(var(--background))",
-//         foreground: "hsl(var(--foreground))",
-//         primary: {
-//           DEFAULT: "hsl(var(--primary))",
-//           foreground: "hsl(var(--primary-foreground))",
-//         },
-//         secondary: {
-//           DEFAULT: "hsl(var(--secondary))",
-//           foreground: "hsl(var(--secondary-foreground))",
-//         },
-//         destructive: {
-//           DEFAULT: "hsl(var(--destructive))",
-//           foreground: "hsl(var(--destructive-foreground))",
-//         },
-//         muted: {
-//           DEFAULT: "hsl(var(--muted))",
-//           foreground: "hsl(var(--muted-foreground))",
-//         },
-//         accent: {
-//           DEFAULT: "hsl(var(--accent))",
-//           foreground: "hsl(var(--accent-foreground))",
-//         },
-//         popover: {
-//           DEFAULT: "hsl(var(--popover))",
-//           foreground: "hsl(var(--popover-foreground))",
-//         },
-//         card: {
-//           DEFAULT: "hsl(var(--card))",
-//           foreground: "hsl(var(--card-foreground))",
-//         },
-//       },
-//       borderRadius: {
-//         lg: "var(--radius)",
-//         md: "calc(var(--radius) - 2px)",
-//         sm: "calc(var(--radius) - 4px)",
-//       },
-//     },
-//   },
-//   plugins: [],
-// };
-
-// export default config;
-
 import type { Config } from "tailwindcss";
 
 const config: Config = {
   darkMode: "class",
   content: [
-    "./src/app/**/*.{ts,tsx}",
-    "./src/components/**/*.{ts,tsx}",
+    "./src/pages/**/*.{js,ts,jsx,tsx,mdx}",
+    "./src/components/**/*.{js,ts,jsx,tsx,mdx}",
+    "./src/app/**/*.{js,ts,jsx,tsx,mdx}",
+    "./src/lib/**/*.{js,ts,jsx,tsx,mdx}",
   ],
   theme: {
-    extend: {},
+    extend: {
+      colors: {
+        border: "var(--color-border)",
+        input: "var(--color-input)",
+        ring: "var(--color-ring)",
+        background: "var(--color-background)",
+        foreground: "var(--color-foreground)",
+        primary: {
+          DEFAULT: "var(--color-primary)",
+          foreground: "var(--color-primary-foreground)",
+        },
+        secondary: {
+          DEFAULT: "var(--color-secondary)",
+          foreground: "var(--color-secondary-foreground)",
+        },
+        destructive: {
+          DEFAULT: "var(--color-destructive)",
+          foreground: "var(--color-destructive-foreground)",
+        },
+        muted: {
+          DEFAULT: "var(--color-muted)",
+          foreground: "var(--color-muted-foreground)",
+        },
+        accent: {
+          DEFAULT: "var(--color-accent)",
+          foreground: "var(--color-accent-foreground)",
+        },
+        popover: {
+          DEFAULT: "var(--color-popover)",
+          foreground: "var(--color-popover-foreground)",
+        },
+        card: {
+          DEFAULT: "var(--color-card)",
+          foreground: "var(--color-card-foreground)",
+        },
+        brand: {
+          50:  "#f0fdf4",
+          100: "#dcfce7",
+          200: "#bbf7d0",
+          300: "#86efac",
+          400: "#4ade80",
+          500: "#22c55e",
+          600: "#16a34a",
+          700: "#15803d",
+          800: "#166534",
+          900: "#14532d",
+          950: "#052e16",
+        },
+        charity: {
+          DEFAULT: "#8b5cf6",
+          light: "#ede9fe",
+        },
+      },
+      borderRadius: {
+        lg: "var(--radius)",
+        md: "calc(var(--radius) - 2px)",
+        sm: "calc(var(--radius) - 4px)",
+      },
+      fontFamily: {
+        sans: ["var(--font-geist-sans)", "system-ui", "sans-serif"],
+        mono: ["var(--font-geist-mono)", "monospace"],
+      },
+      keyframes: {
+        "accordion-down": {
+          from: { height: "0" },
+          to: { height: "var(--radix-accordion-content-height)" },
+        },
+        "accordion-up": {
+          from: { height: "var(--radix-accordion-content-height)" },
+          to: { height: "0" },
+        },
+        "fade-in": {
+          from: { opacity: "0", transform: "translateY(8px)" },
+          to: { opacity: "1", transform: "translateY(0)" },
+        },
+        shimmer: {
+          from: { backgroundPosition: "200% 0" },
+          to: { backgroundPosition: "-200% 0" },
+        },
+      },
+      animation: {
+        "accordion-down": "accordion-down 0.2s ease-out",
+        "accordion-up": "accordion-up 0.2s ease-out",
+        "fade-in": "fade-in 0.3s ease-out",
+        shimmer: "shimmer 2s infinite linear",
+      },
+    },
   },
-  plugins: [],
+  plugins: [require("tailwindcss-animate")],
 };
 
 export default config;
