@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Trophy, Target, Heart, CreditCard,
-  TrendingUp, Calendar, ChevronRight, Star,
+  Calendar, ChevronRight, Star,
 } from "lucide-react";
 
 type Props = {

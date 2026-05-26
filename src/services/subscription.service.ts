@@ -1,12 +1,10 @@
 import { prisma } from "@/lib/prisma/client";
-import { razorpay, RAZORPAY_PLANS } from "@/lib/razorpay/client";
+import { razorpay } from "@/lib/razorpay/client";
 import { verifyRazorpayPayment, verifyRazorpayWebhook } from "@/lib/razorpay/verify";
 import { NotFoundError } from "@/lib/utils/errors";
 import type { Subscription } from "@prisma/client";
 
 export type SubscriptionPlan = "monthly" | "yearly";
-
-// ─── Get or create subscription record ───────────────────────────
 
 export async function getUserSubscription(userId: string): Promise<Subscription | null> {
   return prisma.subscription.findUnique({ where: { userId } });
@@ -15,34 +13,26 @@ export async function getUserSubscription(userId: string): Promise<Subscription 
 export async function getOrCreateSubscriptionRecord(userId: string): Promise<Subscription> {
   const existing = await prisma.subscription.findUnique({ where: { userId } });
   if (existing) return existing;
-
   return prisma.subscription.create({
     data: { userId, status: "inactive" },
   });
 }
 
-// ─── Create Razorpay Order ────────────────────────────────────────
-// Razorpay flow:
-// 1. Server creates an Order (amount in paise)
-// 2. Client opens Razorpay checkout modal with the order_id
-// 3. User pays → Razorpay calls our webhook OR client sends payment_id + signature
-// 4. We verify signature and activate subscription
-
 export async function createOrder(
   userId: string,
   plan: SubscriptionPlan
-): Promise<{
-  orderId: string;
-  amount: number;
-  currency: string;
-  keyId: string;
-}> {
+): Promise<{ orderId: string; amount: number; currency: string; keyId: string }> {
   await getOrCreateSubscriptionRecord(userId);
 
-  const planConfig = RAZORPAY_PLANS[plan];
+  const amounts: Record<SubscriptionPlan, number> = {
+    monthly: Number(process.env.MONTHLY_PRICE_PENCE ?? 999),
+    yearly: Number(process.env.YEARLY_PRICE_PENCE ?? 9990),
+  };
+
+  const amount = amounts[plan];
 
   const order = await razorpay.orders.create({
-    amount: planConfig.amount * 100, // Razorpay uses paise (100 paise = ₹1) or smallest unit
+    amount: amount * 100,
     currency: "INR",
     receipt: `sub_${userId.slice(0, 8)}_${Date.now()}`,
     notes: { userId, plan },
@@ -50,13 +40,11 @@ export async function createOrder(
 
   return {
     orderId: order.id,
-    amount: planConfig.amount,
+    amount,
     currency: "INR",
     keyId: process.env.RAZORPAY_KEY_ID!,
   };
 }
-
-// ─── Verify payment & activate subscription ───────────────────────
 
 export async function verifyAndActivate(
   userId: string,
@@ -65,7 +53,6 @@ export async function verifyAndActivate(
   razorpayPaymentId: string,
   razorpaySignature: string
 ): Promise<Subscription> {
-  // Verify the payment signature
   const isValid = verifyRazorpayPayment(
     razorpayOrderId,
     razorpayPaymentId,
@@ -77,9 +64,6 @@ export async function verifyAndActivate(
   }
 
   const now = new Date();
-  const planConfig = RAZORPAY_PLANS[plan];
-
-  // Calculate period end based on plan
   const periodEnd = new Date(now);
   if (plan === "monthly") {
     periodEnd.setMonth(periodEnd.getMonth() + 1);
@@ -87,7 +71,7 @@ export async function verifyAndActivate(
     periodEnd.setFullYear(periodEnd.getFullYear() + 1);
   }
 
-  const subscription = await prisma.subscription.upsert({
+  return prisma.subscription.upsert({
     where: { userId },
     create: {
       userId,
@@ -107,11 +91,7 @@ export async function verifyAndActivate(
       cancelAtPeriodEnd: false,
     },
   });
-
-  return subscription;
 }
-
-// ─── Cancel subscription ──────────────────────────────────────────
 
 export async function cancelSubscription(userId: string): Promise<Subscription> {
   const sub = await prisma.subscription.findUnique({ where: { userId } });
@@ -119,32 +99,40 @@ export async function cancelSubscription(userId: string): Promise<Subscription> 
 
   return prisma.subscription.update({
     where: { userId },
-    data: {
-      cancelAtPeriodEnd: true,
-      cancelledAt: new Date(),
-    },
+    data: { cancelAtPeriodEnd: true, cancelledAt: new Date() },
   });
 }
-
-// ─── Webhook handler ──────────────────────────────────────────────
-// Razorpay sends webhook events for payment.captured, subscription.activated, etc.
 
 export async function handleRazorpayWebhook(
   rawBody: string,
   signature: string
 ): Promise<void> {
-  const secret = process.env.RAZORPAY_KEY_SECRET!;
-  const isValid = verifyRazorpayWebhook(rawBody, signature, secret);
+  const isValid = verifyRazorpayWebhook(
+    rawBody,
+    signature,
+    process.env.RAZORPAY_KEY_SECRET!
+  );
 
-  if (!isValid) {
-    throw new Error("Invalid webhook signature");
-  }
+  if (!isValid) throw new Error("Invalid webhook signature");
 
   const event = JSON.parse(rawBody) as {
     event: string;
     payload: {
-      payment?: { entity: { id: string; notes: { userId?: string; plan?: string }; created_at: number } };
-      subscription?: { entity: { id: string; status: string; notes: { userId?: string }; current_end: number } };
+      payment?: {
+        entity: {
+          id: string;
+          notes: { userId?: string; plan?: string };
+          created_at: number;
+        };
+      };
+      subscription?: {
+        entity: {
+          id: string;
+          status: string;
+          notes: { userId?: string };
+          current_end: number;
+        };
+      };
     };
   };
 
@@ -188,13 +176,9 @@ export async function handleRazorpayWebhook(
 
     case "subscription.cancelled": {
       const sub = event.payload.subscription?.entity;
-      if (!sub) break;
-
-      const userId = sub.notes.userId;
-      if (!userId) break;
-
+      if (!sub?.notes.userId) break;
       await prisma.subscription.updateMany({
-        where: { userId },
+        where: { userId: sub.notes.userId },
         data: { status: "cancelled", cancelledAt: new Date() },
       });
       break;
@@ -202,13 +186,9 @@ export async function handleRazorpayWebhook(
 
     case "subscription.charged": {
       const sub = event.payload.subscription?.entity;
-      if (!sub) break;
-
-      const userId = sub.notes.userId;
-      if (!userId) break;
-
+      if (!sub?.notes.userId) break;
       await prisma.subscription.updateMany({
-        where: { userId },
+        where: { userId: sub.notes.userId },
         data: {
           status: "active",
           currentPeriodEnd: new Date(sub.current_end * 1000),

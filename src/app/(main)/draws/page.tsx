@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { getPublishedDraws } from "@/services/draw.service";
-import { formatCurrency, formatDate } from "@/lib/utils/format";
+import { formatCurrency } from "@/lib/utils/format";
 import Link from "next/link";
 import { Card, CardContent } from "@/components/ui/card";
 import { Trophy, Calendar } from "lucide-react";

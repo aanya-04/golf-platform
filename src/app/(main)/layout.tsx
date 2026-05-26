@@ -12,11 +12,7 @@ export default async function MainLayout({ children }: { children: React.ReactNo
 
   if (!supabaseUser) redirect("/login");
 
-  const [user, subscription] = await Promise.all([
-    getUserBySupabaseId(supabaseUser.id),
-    null as Awaited<ReturnType<typeof getUserSubscription>> | null,
-  ]);
-
+  const user = await getUserBySupabaseId(supabaseUser.id);
   if (!user) redirect("/login");
 
   const sub = await getUserSubscription(user.id);

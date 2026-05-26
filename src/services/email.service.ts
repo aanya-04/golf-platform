@@ -27,7 +27,6 @@ type SubscriptionEmailInput = {
 };
 
 export async function sendDrawResultEmail(input: DrawResultEmailInput): Promise<void> {
-  const matchedScores = input.userScores.filter((s) => input.drawnNumbers.includes(s));
   const isWinner = input.matchCount >= 3;
 
   await resend.emails.send({
@@ -83,16 +82,15 @@ export async function sendWinnerAlert(input: WinnerAlertEmailInput): Promise<voi
     subject: `Action required: Claim your ${formatCurrency(input.prizeAmountPence)} prize`,
     html: `
       <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto;">
-        <h1 style="color: #16a34a;">🏆 You're a winner!</h1>
+        <h1 style="color: #16a34a;">🏆 You are a winner!</h1>
         <p>Hi ${input.userName},</p>
         <p>You matched <strong>${input.matchTier} numbers</strong> in the <strong>${input.drawMonth}</strong> draw.</p>
         <p style="font-size: 24px; color: #16a34a; font-weight: bold;">
           Prize: ${formatCurrency(input.prizeAmountPence)}
         </p>
-        <p>To claim your prize, please:</p>
         <ol>
           <li>Log in to your dashboard</li>
-          <li>Navigate to "My Winnings"</li>
+          <li>Navigate to My Winnings</li>
           <li>Upload a screenshot of your scores from your golf platform</li>
         </ol>
         <a href="${process.env.NEXT_PUBLIC_APP_URL}/winnings"
@@ -111,11 +109,10 @@ export async function sendSubscriptionConfirmation(input: SubscriptionEmailInput
     subject: "Welcome — your subscription is active",
     html: `
       <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto;">
-        <h1 style="color: #16a34a;">You're in! 🎉</h1>
+        <h1 style="color: #16a34a;">You are in! 🎉</h1>
         <p>Hi ${input.userName},</p>
         <p>Your <strong>${input.plan}</strong> subscription is now active.</p>
         <p>Next billing date: <strong>${formatDate(input.nextBillingDate)}</strong></p>
-        <p>You can now:</p>
         <ul>
           <li>Enter your golf scores</li>
           <li>Participate in monthly draws</li>

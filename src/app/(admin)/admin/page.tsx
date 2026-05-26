@@ -1,6 +1,6 @@
 import { prisma } from "@/lib/prisma/client";
 import { formatCurrency } from "@/lib/utils/format";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Users, Trophy, Heart, DollarSign } from "lucide-react";
 
 export default async function AdminPage() {
